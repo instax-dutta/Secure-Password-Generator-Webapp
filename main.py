@@ -1,15 +1,23 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, g
 import random
 import string
-import pymongo
+import sqlite3
 from zxcvbn import zxcvbn
 
 app = Flask(__name__, static_url_path='/static')
+app.config['DATABASE'] = 'passwords.db'
 
-# connect to MongoDB
-client = pymongo.MongoClient('mongodb://mongo:sIKmH0MdBU7f3O8aouSa@containers-us-west-167.railway.app:5684')
-db = client['passwords']
-collection = db['generated_passwords']
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect(app.config['DATABASE'])
+    return db
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
 
 @app.route('/')
 def index():
@@ -30,11 +38,18 @@ def generate():
         password_chars += string.digits
     if include_special_characters:
         password_chars += string.punctuation
+
+    db = get_db()
+    cursor = db.cursor()
+
     while True:
         password = ''.join(random.choice(password_chars) for i in range(length))
-        if collection.find_one({'password': password}) is None:
+        cursor.execute("SELECT * FROM generated_passwords WHERE password=?", (password,))
+        if cursor.fetchone() is None:
             break
-    collection.insert_one({'password': password})
+
+    cursor.execute("INSERT INTO generated_passwords (password) VALUES (?)", (password,))
+    db.commit()
 
     result = zxcvbn(password)
     strength = result['score']
