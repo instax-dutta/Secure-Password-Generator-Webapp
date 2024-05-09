@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Password Generator</title>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylesheets/style.css') }}">
+</head>
+<script>
+  function copyPassword() {
+    var password = document.getElementById("password");
+    navigator.clipboard.writeText(password.textContent).then(function() {
+      alert("The Generated Password has been Copied to Your Clipboard!");
+    }, function(err) {
+      console.error("Failed to copy text: ", err);
+    });
+  }
+</script>
+  
+<center>
+
+  <h1>Password Generator 🔒</h1>
+  <form method="POST" action="{{ url_for('generate') }}">
+    <label for="length">Password Length:</label>
+    <br>
+    <input type="number" id="length" name="length" min="8" value="8" required>
+
+
+    <br>
+
+    <input type="checkbox" id="upper" name="upper" value="upper">
+    <label for="upper">Uppercase Letters</label>
+
+    <br>
+
+    <input type="checkbox" id="nums" name="nums" value="nums">
+    <label for="nums">Numbers</label>
+
+    <br>
+
+    <input type="checkbox" id="spec" name="spec" value="spec">
+    <label for="spec">Special Characters</label>
+
+    <br><br>
+
+    <input type="submit" value="Generate Password">
+  </form>
+  {% if password %}
+    <h2>Generated Password:</h2>
+    <p id="password" readonly onclick="copyPassword()">{{ password }}</p>
+    <h2>Password Strength:</h2>
+    <div class="meter">
+      <span style="width: {{ strength * 20 }}%"></span>
+    </div>
+  {% endif %}
+</center>
+</body>
+</html>
